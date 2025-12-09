@@ -25,6 +25,7 @@ class SVDViewerGUI:
         # 当前加载的设备信息
         self.device_info = None
         self.current_file = None
+        self.current_register_data = None  # 保存当前显示的寄存器数据
         
         # 搜索选项（复选框）
         self.match_case = tk.BooleanVar(value=False)
@@ -428,7 +429,11 @@ class SVDViewerGUI:
         # 如果没有字段信息,隐藏Canvas frame
         if not register_data or not register_data.get('fields'):
             self.bit_diagram_canvas.master.pack_forget()
+            self.current_register_data = None
             return
+        
+        # 保存当前寄存器数据供点击事件使用
+        self.current_register_data = register_data
         
         # 获取寄存器大小
         reg_size = int(register_data.get('size', '32'))
@@ -494,9 +499,21 @@ class SVDViewerGUI:
             # 选择颜色
             color = field_colors[idx % len(field_colors)]
             
-            # 绘制字段框
-            self.bit_diagram_canvas.create_rectangle(x1, y_field, x2, y_field + bit_height,
-                                                     fill=color, outline='#333', width=1)
+            # 绘制字段框（添加标签以便点击识别）
+            field_rect = self.bit_diagram_canvas.create_rectangle(
+                x1, y_field, x2, y_field + bit_height,
+                fill=color, outline='#333', width=1,
+                tags=f'field_{idx}'
+            )
+            
+            # 绑定点击事件
+            self.bit_diagram_canvas.tag_bind(f'field_{idx}', '<Button-1>', 
+                                            lambda e, f=field: self.on_field_click(f))
+            # 绑定鼠标悬停效果
+            self.bit_diagram_canvas.tag_bind(f'field_{idx}', '<Enter>', 
+                                            lambda e, tag=f'field_{idx}': self.on_field_enter(tag))
+            self.bit_diagram_canvas.tag_bind(f'field_{idx}', '<Leave>', 
+                                            lambda e, tag=f'field_{idx}': self.on_field_leave(tag))
             # 绘制字段名称 (如果宽度足够)
             field_width = x2 - x1
             if field_width > 15:  # 降低最小宽度要求
@@ -572,6 +589,77 @@ class SVDViewerGUI:
                                                    text=bit_range, 
                                                    font=('Arial', 8, 'bold'), 
                                                    fill='#333')
+    
+    def on_field_click(self, field_data):
+        """位域点击事件处理"""
+        # 清空详细信息
+        self.detail_text.delete('1.0', tk.END)
+        
+        # 显示位域详细信息
+        self.detail_text.insert('1.0', f"{'='*40}\n")
+        self.detail_text.insert(tk.END, f"位域: {field_data['name']}\n")
+        self.detail_text.insert(tk.END, f"{'='*40}\n\n")
+        
+        # 位范围
+        lsb = field_data['lsb']
+        msb = field_data['msb']
+        if msb == lsb:
+            bit_range = f"Bit {lsb}"
+        else:
+            bit_range = f"Bits {msb}:{lsb}"
+        self.detail_text.insert(tk.END, f"位范围: {bit_range}\n")
+        
+        # 位宽
+        bit_width = msb - lsb + 1
+        self.detail_text.insert(tk.END, f"位宽: {bit_width} bit(s)\n")
+        
+        # 访问类型
+        access_type = field_data.get('access', 'read-write')
+        access_map = {
+            'read-write': '读写',
+            'read-only': '只读',
+            'write-only': '只写',
+            'rw': '读写',
+            'r': '只读',
+            'w': '只写'
+        }
+        access_cn = access_map.get(access_type, access_type)
+        self.detail_text.insert(tk.END, f"访问权限: {access_cn} ({access_type})\n")
+        
+        # 描述信息
+        description = field_data.get('description', '')
+        if description:
+            self.detail_text.insert(tk.END, f"\n描述:\n{description}\n")
+        
+        # 如果有寄存器信息，也显示
+        if self.current_register_data:
+            self.detail_text.insert(tk.END, f"\n所属寄存器: {self.current_register_data['name']}\n")
+            self.detail_text.insert(tk.END, f"寄存器地址: {self.current_register_data['address']}\n")
+        
+        self.detail_text.insert(tk.END, f"\n{'='*40}\n")
+        self.detail_text.insert(tk.END, "提示: 点击位域可查看详细信息\n")
+        
+        # 更新状态栏
+        self.status_label.config(text=f"已选择位域: {field_data['name']} [{bit_range}]")
+    
+    def on_field_enter(self, tag):
+        """鼠标进入位域时的效果"""
+        # 改变鼠标光标为手型
+        self.bit_diagram_canvas.config(cursor='hand2')
+        # 加粗边框
+        items = self.bit_diagram_canvas.find_withtag(tag)
+        for item in items:
+            self.bit_diagram_canvas.itemconfig(item, width=2, outline='#000')
+    
+    def on_field_leave(self, tag):
+        """鼠标离开位域时恢复"""
+        # 恢复默认光标
+        self.bit_diagram_canvas.config(cursor='')
+        # 恢复边框
+        items = self.bit_diagram_canvas.find_withtag(tag)
+        for item in items:
+            self.bit_diagram_canvas.itemconfig(item, width=1, outline='#333')
+
 
     def expand_all(self):
         """展开所有节点"""
