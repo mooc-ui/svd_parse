@@ -27,6 +27,11 @@ class SVDViewerGUI:
         self.current_file = None
         self.current_register_data = None  # 保存当前显示的寄存器数据
         
+        # 寄存器值计算器
+        self.register_bit_values = []  # 每个位的当前值 [0, 1, 0, ...]
+        self.register_size = 32  # 当前寄存器大小
+        self.register_reset_value = 0  # 重置值
+        
         # 搜索选项（复选框）
         self.match_case = tk.BooleanVar(value=False)
         self.match_whole_word = tk.BooleanVar(value=False)
@@ -182,6 +187,42 @@ class SVDViewerGUI:
         bit_diagram_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, padx=10, pady=(0, 5), before=status_bar)
         bit_diagram_frame.pack_forget()  # Hide frame initially
         
+        # 寄存器值计算器（位域图上方）
+        calc_frame = tk.Frame(bit_diagram_frame, bg='white')
+        calc_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+        
+        # Left side: Selected value
+        left_frame = tk.Frame(calc_frame, bg='white')
+        left_frame.pack(side=tk.LEFT, padx=5)
+        
+        tk.Label(left_frame, text="Selected value", font=("Arial", 9), bg='white').pack(side=tk.TOP, anchor=tk.W)
+        value_frame = tk.Frame(left_frame, relief=tk.SUNKEN, borderwidth=1, bg='white')
+        value_frame.pack(side=tk.TOP, fill=tk.X)
+        
+        tk.Label(value_frame, text="0x", font=("Arial", 10), bg='white').pack(side=tk.LEFT, padx=2)
+        self.selected_value_label = tk.Label(value_frame, text="00000000", 
+                                            font=("Arial", 10, "bold"), fg='black', bg='white', width=12)
+        self.selected_value_label.pack(side=tk.LEFT, padx=2)
+        
+        # Middle: Inverse value
+        mid_frame = tk.Frame(calc_frame, bg='white')
+        mid_frame.pack(side=tk.LEFT, padx=20)
+        
+        tk.Label(mid_frame, text="Inverse value", font=("Arial", 9), bg='white').pack(side=tk.TOP, anchor=tk.W)
+        inv_frame = tk.Frame(mid_frame, relief=tk.SUNKEN, borderwidth=1, bg='white')
+        inv_frame.pack(side=tk.TOP, fill=tk.X)
+        
+        tk.Label(inv_frame, text="0x", font=("Arial", 10), bg='white').pack(side=tk.LEFT, padx=2)
+        self.inverse_value_label = tk.Label(inv_frame, text="FFFFFFFF", 
+                                           font=("Arial", 10, "bold"), fg='#666', bg='white', width=12)
+        self.inverse_value_label.pack(side=tk.LEFT, padx=2)
+        
+        # Right side: Reset button
+        reset_btn = tk.Button(calc_frame, text="Reset", command=self.reset_register_value,
+                             font=("Arial", 10), bg='#f0f0f0', relief=tk.RAISED, padx=15, pady=5)
+        reset_btn.pack(side=tk.RIGHT, padx=5)
+        
+        # 位域图canvas
         self.bit_diagram_canvas = tk.Canvas(bit_diagram_frame, height=150, bg='white')
         self.bit_diagram_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         
@@ -514,7 +555,6 @@ class SVDViewerGUI:
         # 保存当前寄存器数据供点击事件使用
         self.current_register_data = register_data
         
-        
         # 获取寄存器大小（支持十六进制和十进制）
         reg_size_str = register_data.get('size', '32')
         try:
@@ -522,7 +562,27 @@ class SVDViewerGUI:
             reg_size = int(reg_size_str, 0)  # base 0 自动检测进制
         except (ValueError, TypeError):
             reg_size = 32  # 默认32位
+        
+        # 初始化寄存器值计算器
+        self.register_size = reg_size
+        # 解析重置值
+        try:
+            reset_val_str = register_data.get('reset_value', '0x0')
+            self.register_reset_value = int(reset_val_str, 0) if reset_val_str else 0
+        except (ValueError, TypeError):
+            self.register_reset_value = 0
+        
+        # 初始化位值数组（从重置值）
+        self.register_bit_values = []
+        for i in range(reg_size):
+            bit_val = (self.register_reset_value >> i) & 1
+            self.register_bit_values.append(bit_val)
+        
+        # 更新显示的值
+        self.update_register_value_display()
+        
         fields = register_data['fields']
+
         
         # 清空canvas并显示frame
         self.bit_diagram_canvas.delete('all')
@@ -676,8 +736,11 @@ class SVDViewerGUI:
                                                    fill='#333')
     
     def on_field_click(self, field_data):
-        """位域点击事件处理"""
-        # 清空详细信息
+        """位域点击事件处理 - 切换位值"""
+        # 切换位域的值
+        self.toggle_bit_in_field(field_data)
+        
+        # 同时在详细信息中显示位域信息（保留原有功能）
         self.detail_text.delete('1.0', tk.END)
         
         # 显示位域详细信息
@@ -722,10 +785,11 @@ class SVDViewerGUI:
             self.detail_text.insert(tk.END, f"寄存器地址: {self.current_register_data['address']}\n")
         
         self.detail_text.insert(tk.END, f"\n{'='*40}\n")
-        self.detail_text.insert(tk.END, "提示: 点击位域可查看详细信息\n")
+        self.detail_text.insert(tk.END, "提示: 点击位域切换值 (0/1)\n")
         
         # 更新状态栏
-        self.status_label.config(text=f"已选择位域: {field_data['name']} [{bit_range}]")
+        self.status_label.config(text=f"已切换位域: {field_data['name']} [{bit_range}]")
+
     
     def on_field_enter(self, tag):
         """鼠标进入位域时的效果"""
@@ -953,6 +1017,78 @@ class SVDViewerGUI:
                 
             except Exception as e:
                 messagebox.showerror("错误", f"导出失败:\n{str(e)}")
+    
+    def update_register_value_display(self):
+        """更新寄存器值显示"""
+        # 计算当前值
+        value = 0
+        for i, bit in enumerate(self.register_bit_values):
+            if bit:
+                value |= (1 << i)
+        
+        # 计算反转值
+        max_val = (1 << self.register_size) - 1
+        inverse_value = value ^ max_val
+        
+        # 更新显示（格式化为十六进制）
+        hex_width = (self.register_size + 3) // 4  # 计算需要的十六进制位数
+        format_str = f'{{:0{hex_width}X}}'
+        
+        self.selected_value_label.config(text=format_str.format(value))
+        self.inverse_value_label.config(text=format_str.format(inverse_value))
+    
+    def reset_register_value(self):
+        """重置寄存器值到默认值"""
+        if not self.register_bit_values:
+            return
+        
+        # 重置位值数组
+        for i in range(len(self.register_bit_values)):
+            bit_val = (self.register_reset_value >> i) & 1
+            self.register_bit_values[i] = bit_val
+        
+        # 更新显示
+        self.update_register_value_display()
+        
+        # 重绘位域图以更新位的视觉状态
+        if self.current_register_data:
+            # 找到当前寄存器在树中的节点
+            selection = self.tree.selection()
+            if selection:
+                item = selection[0]
+                item_tags = self.tree.item(item, 'tags')
+                if 'register' in item_tags:
+                    self.draw_register_bit_diagram(item)
+        
+        self.status_label.config(text="已重置寄存器值")
+    
+    def toggle_bit_in_field(self, field_data):
+        """切换位域中的位值"""
+        lsb = field_data['lsb']
+        msb = field_data['msb']
+        
+        # 切换此位域的所有位（简单实现：全0变全1，否则变全0）
+        field_value = 0
+        for i in range(lsb, msb + 1):
+            if i < len(self.register_bit_values) and self.register_bit_values[i]:
+                field_value = 1
+                break
+        
+        # 如果当前有任何位为1，全部设为0；否则全部设为1
+        new_val = 0 if field_value else 1
+        for i in range(lsb, msb + 1):
+            if i < len(self.register_bit_values):
+                self.register_bit_values[i] = new_val
+        
+        # 更新显示
+        self.update_register_value_display()
+        
+        # 重绘位域图
+        selection = self.tree.selection()
+        if selection:
+            item = selection[0]
+            self.draw_register_bit_diagram(item)
+
 
 
 def main():
