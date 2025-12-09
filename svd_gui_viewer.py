@@ -247,6 +247,14 @@ class SVDViewerGUI:
             if peripherals_elem is None:
                 return device_info
             
+            # 第一步：构建外设字典（用于derivedFrom查找）
+            peripheral_dict = {}
+            for peripheral in peripherals_elem.findall('peripheral'):
+                periph_name_elem = peripheral.find('name')
+                if periph_name_elem is not None:
+                    peripheral_dict[periph_name_elem.text] = peripheral
+            
+            # 第二步：解析所有外设（包括派生外设）
             for peripheral in peripherals_elem.findall('peripheral'):
                 peripheral_name = peripheral.find('name')
                 peripheral_desc = peripheral.find('description')
@@ -262,9 +270,23 @@ class SVDViewerGUI:
                     'registers': []
                 }
                 
-                # 解析寄存器
-                registers_elem = peripheral.find('registers')
+                # 检查是否派生自其他外设
+                derived_from = peripheral.get('derivedFrom')
+                registers_elem = None
+                
+                if derived_from and derived_from in peripheral_dict:
+                    # 使用基础外设的寄存器定义
+                    source_peripheral = peripheral_dict[derived_from]
+                    registers_elem = source_peripheral.find('registers')
+                else:
+                    # 使用自己的寄存器定义
+                    registers_elem = peripheral.find('registers')
+                
+                # 解析寄存器（无论是自己的还是继承的）
                 if registers_elem is not None:
+                    # 获取当前外设的基地址（用于计算绝对地址）
+                    current_base_addr = int(peripheral_data['base_address'], 16)
+                    
                     for register in registers_elem.findall('register'):
                         reg_name = register.find('name')
                         reg_desc = register.find('description')
@@ -275,10 +297,9 @@ class SVDViewerGUI:
                         if reg_name is None:
                             continue
                         
-                        # 计算绝对地址
-                        base_addr = int(peripheral_data['base_address'], 16)
+                        # 计算绝对地址（使用当前外设的基地址）
                         offset = int(reg_offset.text, 16) if reg_offset is not None else 0
-                        absolute_addr = base_addr + offset
+                        absolute_addr = current_base_addr + offset
                         
                         # 解析size字段（支持十六进制和十进制）
                         size_str = reg_size.text if reg_size is not None else '32'
@@ -362,6 +383,7 @@ class SVDViewerGUI:
 
                         
                         peripheral_data['registers'].append(register_data)
+
                 
                 device_info['peripherals'].append(peripheral_data)
             
