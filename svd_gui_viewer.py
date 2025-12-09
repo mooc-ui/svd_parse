@@ -31,6 +31,7 @@ class SVDViewerGUI:
         self.register_bit_values = []  # 每个位的当前值 [0, 1, 0, ...]
         self.register_size = 32  # 当前寄存器大小
         self.register_reset_value = 0  # 重置值
+        self.current_register_id = None  # 当前寄存器标识符（用于检测切换）
         
         # 搜索选项（复选框）
         self.match_case = tk.BooleanVar(value=False)
@@ -572,11 +573,20 @@ class SVDViewerGUI:
         except (ValueError, TypeError):
             self.register_reset_value = 0
         
-        # 初始化位值数组（从重置值）
-        self.register_bit_values = []
-        for i in range(reg_size):
-            bit_val = (self.register_reset_value >> i) & 1
-            self.register_bit_values.append(bit_val)
+        # 生成寄存器唯一标识符（使用地址+名称）
+        register_id = f"{register_data.get('address', '')}_{register_data.get('name', '')}"
+        
+        # *** 关键修复：只在切换到不同寄存器或大小改变时才初始化 ***
+        # 这样可以保留同一寄存器的修改，但切换寄存器时重新初始化
+        if self.current_register_id != register_id or len(self.register_bit_values) != reg_size:
+            print(f"DEBUG: Initializing bit array (register changed from '{self.current_register_id}' to '{register_id}')")
+            self.current_register_id = register_id
+            self.register_bit_values = []
+            for i in range(reg_size):
+                bit_val = (self.register_reset_value >> i) & 1
+                self.register_bit_values.append(bit_val)
+        else:
+            print(f"DEBUG: Keeping existing bit values for register '{register_id}'")
         
         # 更新显示的值
         self.update_register_value_display()
@@ -734,6 +744,76 @@ class SVDViewerGUI:
                                                    text=bit_range, 
                                                    font=('Arial', 8, 'bold'), 
                                                    fill='#333')
+        
+        # ===== 绘制每个bit的值圆圈（可点击）在位域方框下方 =====
+        y_bit_circle = y_field + bit_height + 50  # 圆圈的Y位置（在位域方框下方）
+        circle_radius = 12  # 圆圈半径
+        
+        for bit_pos in range(reg_size):
+            # 计算圆圈中心位置
+            x_center = margin_left + (reg_size - bit_pos - 0.5) * bit_width
+            
+            # 检查该bit是否为保留位（未被任何field使用）
+            is_reserved = not bit_used[bit_pos]
+            
+            # 获取当前位的值
+            bit_value = self.register_bit_values[bit_pos] if bit_pos < len(self.register_bit_values) else 0
+            
+            # DEBUG: 输出前几个bit的值
+            if bit_pos < 5:
+                print(f"DEBUG: Drawing bit {bit_pos}, value={bit_value}, reserved={is_reserved}, array_len={len(self.register_bit_values)}")
+            
+            # 圆圈颜色：保留位固定为浅灰色，正常位根据值显示
+            if is_reserved:
+                circle_color = '#D0D0D0'  # 保留位固定浅灰色
+                text_color = '#999'
+            else:
+                circle_color = '#4CAF50' if bit_value else '#E0E0E0'
+                text_color = 'white' if bit_value else '#666'
+            
+            # 创建圆圈
+            circle_tag = f'bit_{bit_pos}'
+            circle = self.bit_diagram_canvas.create_oval(
+                x_center - circle_radius, y_bit_circle - circle_radius,
+                x_center + circle_radius, y_bit_circle + circle_radius,
+                fill=circle_color, outline='#999', width=1,
+                tags=(circle_tag, 'bit_circle')
+            )
+            
+            # 在圆圈中显示值（保留位显示'-'）
+            display_text = '-' if is_reserved else str(bit_value)
+            text = self.bit_diagram_canvas.create_text(
+                x_center, y_bit_circle,
+                text=display_text,
+                font=('Arial', 10, 'bold'),
+                fill=text_color,
+                tags=(circle_tag, 'bit_circle')
+            )
+            
+            # 只为非保留位绑定点击事件
+            if not is_reserved:
+                # 绑定点击事件 - 切换该位的值
+                print(f"DEBUG: Binding click for bit {bit_pos}")  # 调试
+                self.bit_diagram_canvas.tag_bind(circle_tag, '<Button-1>', 
+                                                lambda e, bp=bit_pos: self.toggle_single_bit(bp))
+                
+                # 绑定悬停效果
+                self.bit_diagram_canvas.tag_bind(circle_tag, '<Enter>',
+                                                lambda e, tag=circle_tag: self.on_bit_enter(tag))
+                self.bit_diagram_canvas.tag_bind(circle_tag, '<Leave>',
+                                                lambda e, tag=circle_tag: self.on_bit_leave(tag))
+        
+        # 绘制bit编号标签（在圆圈上方）
+        y_bit_label = y_bit_circle - circle_radius - 8
+        for bit_pos in range(reg_size):
+            x_center = margin_left + (reg_size - bit_pos - 0.5) * bit_width
+            self.bit_diagram_canvas.create_text(
+                x_center, y_bit_label,
+                text=str(bit_pos),
+                font=('Arial', 7),
+                fill='#666'
+            )
+
     
     def on_field_click(self, field_data):
         """位域点击事件处理 - 切换位值"""
@@ -1088,6 +1168,51 @@ class SVDViewerGUI:
         if selection:
             item = selection[0]
             self.draw_register_bit_diagram(item)
+    
+    def toggle_single_bit(self, bit_pos):
+        """切换单个bit的值"""
+        if bit_pos < len(self.register_bit_values):
+            # 切换位值
+            old_value = self.register_bit_values[bit_pos]
+            self.register_bit_values[bit_pos] = 1 - self.register_bit_values[bit_pos]
+            new_value = self.register_bit_values[bit_pos]
+            
+            print(f"DEBUG: Toggled bit {bit_pos}: {old_value} -> {new_value}")  # 调试输出
+            
+            # 更新显示
+            self.update_register_value_display()
+            
+            # 重绘位域图以更新视觉
+            selection = self.tree.selection()
+            if selection:
+                item = selection[0]
+                self.draw_register_bit_diagram(item)
+            
+            # 更新状态栏
+            self.status_label.config(text=f"已切换 Bit {bit_pos} -> {self.register_bit_values[bit_pos]}")
+        else:
+            print(f"DEBUG: bit_pos {bit_pos} out of range (len={len(self.register_bit_values)})")
+
+    
+    def on_bit_enter(self, tag):
+        """鼠标进入bit圆圈时的效果"""
+        self.bit_diagram_canvas.config(cursor='hand2')
+        # 加粗边框
+        items = self.bit_diagram_canvas.find_withtag(tag)
+        for item in items:
+            item_type = self.bit_diagram_canvas.type(item)
+            if item_type == 'oval':
+                self.bit_diagram_canvas.itemconfig(item, width=2, outline='#000')
+    
+    def on_bit_leave(self, tag):
+        """鼠标离开bit圆圈时恢复"""
+        self.bit_diagram_canvas.config(cursor='')
+        # 恢复边框
+        items = self.bit_diagram_canvas.find_withtag(tag)
+        for item in items:
+            item_type = self.bit_diagram_canvas.type(item)
+            if item_type == 'oval':
+                self.bit_diagram_canvas.itemconfig(item, width=1, outline='#999')
 
 
 
