@@ -176,6 +176,14 @@ class SVDViewerGUI:
                                      font=("Arial", 9), anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10, pady=2)
         
+        # ====== 寄存器位图区域（底部） ======
+        bit_diagram_frame = tk.Frame(self.root, relief=tk.RIDGE, borderwidth=2)
+        bit_diagram_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, padx=10, pady=(0, 5), before=status_bar)
+        bit_diagram_frame.pack_forget()  # Hide frame initially
+        
+        self.bit_diagram_canvas = tk.Canvas(bit_diagram_frame, height=150, bg='white')
+        self.bit_diagram_canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        
     def open_file(self):
         """打开SVD文件"""
         file_path = filedialog.askopenfilename(
@@ -275,8 +283,29 @@ class SVDViewerGUI:
                             'offset': reg_offset.text if reg_offset is not None else '0x0',
                             'address': f'0x{absolute_addr:08X}',
                             'size': reg_size.text if reg_size is not None else '32',
-                            'reset_value': reg_reset.text if reg_reset is not None else ''
+                            'reset_value': reg_reset.text if reg_reset is not None else '',
+                            'fields': []
                         }
+                        
+                        # 解析字段信息
+                        fields_elem = register.find('fields')
+                        if fields_elem is not None:
+                            for field in fields_elem.findall('field'):
+                                field_name = field.find('name')
+                                field_desc = field.find('description')
+                                field_lsb = field.find('lsb')
+                                field_msb = field.find('msb')
+                                field_access = field.find('access')
+                                
+                                if field_name is not None and field_lsb is not None and field_msb is not None:
+                                    field_data = {
+                                        'name': field_name.text,
+                                        'description': field_desc.text if field_desc is not None else '',
+                                        'lsb': int(field_lsb.text),
+                                        'msb': int(field_msb.text),
+                                        'access': field_access.text if field_access is not None else 'read-write'
+                                    }
+                                    register_data['fields'].append(field_data)
                         
                         peripheral_data['registers'].append(register_data)
                 
@@ -363,10 +392,14 @@ class SVDViewerGUI:
         # 根据类型显示不同信息
         if 'register' in item_tags:
             self.detail_text.insert(tk.END, f"\n类型: 寄存器\n")
+            # 尝试获取并绘制寄存器位图
+            self.draw_register_bit_diagram(item)
         elif 'peripheral' in item_tags:
             self.detail_text.insert(tk.END, f"\n类型: 外设模块\n")
+            self.bit_diagram_canvas.master.pack_forget()  # Hide canvas frame
         elif 'device' in item_tags:
             self.detail_text.insert(tk.END, f"\n类型: 设备\n")
+            self.bit_diagram_canvas.master.pack_forget()  # Hide canvas frame
             if self.device_info:
                 vendor = self.device_info.get('vendor', '')
                 version = self.device_info.get('version', '')
@@ -375,6 +408,171 @@ class SVDViewerGUI:
                 if version:
                     self.detail_text.insert(tk.END, f"版本: {version}\n")
     
+    def draw_register_bit_diagram(self, tree_item):
+        """绘制寄存器位图"""
+        # 查找对应的寄存器数据
+        register_data = None
+        item_text = self.tree.item(tree_item, 'text')
+        reg_name = item_text.replace('📋 ', '')
+        
+        # 查找寄存器数据
+        if self.device_info:
+            for peripheral in self.device_info['peripherals']:
+                for register in peripheral['registers']:
+                    if register['name'] == reg_name:
+                        register_data = register
+                        break
+                if register_data:
+                    break
+        
+        # 如果没有字段信息,隐藏Canvas frame
+        if not register_data or not register_data.get('fields'):
+            self.bit_diagram_canvas.master.pack_forget()
+            return
+        
+        # 获取寄存器大小
+        reg_size = int(register_data.get('size', '32'))
+        fields = register_data['fields']
+        
+        # 清空canvas并显示frame
+        self.bit_diagram_canvas.delete('all')
+        if not self.bit_diagram_canvas.master.winfo_ismapped():
+            self.bit_diagram_canvas.master.pack(side=tk.BOTTOM, fill=tk.BOTH, padx=10, pady=(0, 5), before=self.status_label.master)
+        
+        # Canvas尺寸
+        canvas_width = self.bit_diagram_canvas.winfo_width()
+        if canvas_width <= 1:  # Canvas未初始化
+            canvas_width = 1180  # 默认宽度（更大）
+        canvas_height = 150
+        
+        # 边距和布局参数
+        margin_left = 20
+        margin_right = 20
+        margin_top = 20
+        bit_height = 50
+        
+        # 计算可用宽度和每位的宽度
+        available_width = canvas_width - margin_left - margin_right
+        bit_width = available_width / reg_size
+        
+        # 绘制位号 (顶部)
+        y_bit_number = margin_top
+        for bit in range(reg_size):
+            x = margin_left + (reg_size - 1 - bit) * bit_width
+            # 每隔8位显示位号
+            if bit % 8 == 0 or bit == reg_size - 1:
+                self.bit_diagram_canvas.create_text(x + bit_width/2, y_bit_number, 
+                                                    text=str(bit), 
+                                                    font=('Arial', 9, 'bold'), 
+                                                    fill='#333')
+        
+        # 绘制字段框
+        y_field = margin_top + 15
+        
+        # 准备颜色列表
+        field_colors = ['#E3F2FD', '#FFF3E0', '#F3E5F5', '#E8F5E9', '#FFF9C4', '#FCE4EC']
+        
+        # 创建位数组,标记哪些位已被使用
+        bit_used = [False] * reg_size
+        
+        # 按字段绘制
+        for idx, field in enumerate(fields):
+            lsb = field['lsb']
+            msb = field['msb']
+            field_name = field['name']
+            access_type = field.get('access', 'rw')
+            
+            # 标记使用的位
+            for bit in range(lsb, msb + 1):
+                if bit < reg_size:
+                    bit_used[bit] = True
+            
+            # 计算字段框的位置和宽度
+            x1 = margin_left + (reg_size - 1 - msb) * bit_width
+            x2 = margin_left + (reg_size - lsb) * bit_width
+            
+            # 选择颜色
+            color = field_colors[idx % len(field_colors)]
+            
+            # 绘制字段框
+            self.bit_diagram_canvas.create_rectangle(x1, y_field, x2, y_field + bit_height,
+                                                     fill=color, outline='#333', width=1)
+            # 绘制字段名称 (如果宽度足够)
+            field_width = x2 - x1
+            if field_width > 15:  # 降低最小宽度要求
+                # 显示完整字段名称,不截断
+                self.bit_diagram_canvas.create_text((x1 + x2) / 2, y_field + bit_height/2 - 8,
+                                                   text=field_name, 
+                                                   font=('Arial', 8), 
+                                                   fill='#000')
+            
+            # 绘制访问类型
+            if field_width > 20:  # 提高访问类型显示的最小宽度
+                access_short = access_type.replace('read-write', 'rw').replace('read-only', 'r').replace('write-only', 'w')
+                self.bit_diagram_canvas.create_text((x1 + x2) / 2, y_field + bit_height/2 + 10,
+                                                   text=access_short, 
+                                                   font=('Arial', 7), 
+                                                   fill='#666')
+        
+        # 绘制预留位(Reserved)
+        current_reserved_start = None
+        for bit in range(reg_size):
+            if not bit_used[bit]:
+                if current_reserved_start is None:
+                    current_reserved_start = bit
+            else:
+                if current_reserved_start is not None:
+                    # 绘制预留区域
+                    x1 = margin_left + (reg_size - 1 - (bit - 1)) * bit_width
+                    x2 = margin_left + (reg_size - current_reserved_start) * bit_width
+                    
+                    self.bit_diagram_canvas.create_rectangle(x1, y_field, x2, y_field + bit_height,
+                                                            fill='#F5F5F5', outline='#999', 
+                                                            width=1, dash=(2, 2))
+                    
+                    # 如果宽度足够,显示"RES"
+                    if (x2 - x1) > 20:
+                        self.bit_diagram_canvas.create_text((x1 + x2) / 2, y_field + bit_height/2,
+                                                           text='RES', 
+                                                           font=('Arial', 8), 
+                                                           fill='#999')
+                    
+                    current_reserved_start = None
+        
+        # 处理最后的预留位
+        if current_reserved_start is not None:
+            x1 = margin_left
+            x2 = margin_left + (reg_size - current_reserved_start) * bit_width
+            
+            self.bit_diagram_canvas.create_rectangle(x1, y_field, x2, y_field + bit_height,
+                                                    fill='#F5F5F5', outline='#999', 
+                                                    width=1, dash=(2, 2))
+            
+            if (x2 - x1) > 20:
+                self.bit_diagram_canvas.create_text((x1 + x2) / 2, y_field + bit_height/2,
+                                                   text='RES', 
+                                                   font=('Arial', 8), 
+                                                   fill='#999')
+        
+        # 在底部绘制位范围标签
+        y_bit_range = y_field + bit_height + 10
+        for field in fields:
+            lsb = field['lsb']
+            msb = field['msb']
+            x1 = margin_left + (reg_size - 1 - msb) * bit_width
+            x2 = margin_left + (reg_size - lsb) * bit_width
+            
+            if msb == lsb:
+                bit_range = str(lsb)
+            else:
+                bit_range = f"{msb}:{lsb}"
+            
+            if (x2 - x1) > 15:
+                self.bit_diagram_canvas.create_text((x1 + x2) / 2, y_bit_range,
+                                                   text=bit_range, 
+                                                   font=('Arial', 8, 'bold'), 
+                                                   fill='#333')
+
     def expand_all(self):
         """展开所有节点"""
         def expand_recursive(item):
