@@ -224,8 +224,10 @@ class SVDViewerGUI:
                 messagebox.showerror("错误", "无法解析SVD文件")
                 
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             self.status_label.config(text="加载出错")
-            messagebox.showerror("错误", f"加载文件时出错：\n{str(e)}")
+            messagebox.showerror("错误", f"加载文件时出错:\n{str(e)}\n\n详细信息:\n{error_details}")
     
     def parse_svd(self, svd_file):
         """解析SVD文件（与命令行版本相同）"""
@@ -278,35 +280,86 @@ class SVDViewerGUI:
                         offset = int(reg_offset.text, 16) if reg_offset is not None else 0
                         absolute_addr = base_addr + offset
                         
+                        # 解析size字段（支持十六进制和十进制）
+                        size_str = reg_size.text if reg_size is not None else '32'
+                        try:
+                            size_value = int(size_str, 0)  # base 0 自动检测进制
+                        except (ValueError, TypeError):
+                            size_value = 32
+                        
                         register_data = {
                             'name': reg_name.text,
                             'description': reg_desc.text if reg_desc is not None else '',
                             'offset': reg_offset.text if reg_offset is not None else '0x0',
                             'address': f'0x{absolute_addr:08X}',
-                            'size': reg_size.text if reg_size is not None else '32',
+                            'size': str(size_value),  # 转换为字符串存储
                             'reset_value': reg_reset.text if reg_reset is not None else '',
                             'fields': []
                         }
                         
-                        # 解析字段信息
+                        # 解析字段信息（支持多种格式）
                         fields_elem = register.find('fields')
                         if fields_elem is not None:
                             for field in fields_elem.findall('field'):
                                 field_name = field.find('name')
                                 field_desc = field.find('description')
-                                field_lsb = field.find('lsb')
-                                field_msb = field.find('msb')
                                 field_access = field.find('access')
                                 
-                                if field_name is not None and field_lsb is not None and field_msb is not None:
+                                if field_name is None:
+                                    continue
+                                
+                                # 尝试多种位域定义格式
+                                lsb = None
+                                msb = None
+                                
+                                # 格式1: 使用 lsb 和 msb 标签（如 TLE987x.svd）
+                                field_lsb = field.find('lsb')
+                                field_msb = field.find('msb')
+                                if field_lsb is not None and field_msb is not None:
+                                    lsb = int(field_lsb.text)
+                                    msb = int(field_msb.text)
+                                
+                                # 格式2: 使用 bitRange 标签（如 NSUC1602.svd）
+                                # bitRange 格式: "[msb:lsb]" 例如 "[7:0]"
+                                elif field.find('bitRange') is not None:
+                                    bit_range = field.find('bitRange').text
+                                    # 解析 [msb:lsb] 格式
+                                    bit_range = bit_range.strip('[]')
+                                    if ':' in bit_range:
+                                        msb_str, lsb_str = bit_range.split(':')
+                                        msb = int(msb_str.strip())
+                                        lsb = int(lsb_str.strip())
+                                    else:
+                                        # 单个位，如 "[5]"
+                                        lsb = msb = int(bit_range.strip())
+                                
+                                # 格式3: 使用 bitOffset 和 bitWidth 标签
+                                elif field.find('bitOffset') is not None:
+                                    bit_offset_elem = field.find('bitOffset')
+                                    bit_width_elem = field.find('bitWidth')
+                                    
+                                    if bit_offset_elem is not None and bit_offset_elem.text:
+                                        bit_offset = int(bit_offset_elem.text)
+                                        lsb = bit_offset
+                                        
+                                        if bit_width_elem is not None and bit_width_elem.text:
+                                            bit_width = int(bit_width_elem.text)
+                                            msb = bit_offset + bit_width - 1
+                                        else:
+                                            # 如果只有 bitOffset，假设为单位
+                                            msb = lsb
+                                
+                                # 如果成功解析出位范围，添加字段
+                                if lsb is not None and msb is not None:
                                     field_data = {
                                         'name': field_name.text,
                                         'description': field_desc.text if field_desc is not None else '',
-                                        'lsb': int(field_lsb.text),
-                                        'msb': int(field_msb.text),
+                                        'lsb': lsb,
+                                        'msb': msb,
                                         'access': field_access.text if field_access is not None else 'read-write'
                                     }
                                     register_data['fields'].append(field_data)
+
                         
                         peripheral_data['registers'].append(register_data)
                 
@@ -342,20 +395,24 @@ class SVDViewerGUI:
         # 添加外设和寄存器
         for peripheral in self.device_info['peripherals']:
             # 外设节点
-            periph_text = f"📦 {peripheral['name']}"
+            periph_text = f"📦 {peripheral.get('name', 'Unknown')}"
+            periph_desc = peripheral.get('description', '')
             periph_node = self.tree.insert(device_node, 'end', text=periph_text,
-                                          values=(f"{len(peripheral['registers'])} 个寄存器", 
-                                                 peripheral['base_address'],
-                                                 peripheral['description']),
+                                          values=(f"{len(peripheral.get('registers', []))} 个寄存器", 
+                                                 peripheral.get('base_address', ''),
+                                                 periph_desc if periph_desc else ''),
                                           tags=('peripheral',))
             
             # 寄存器节点
-            for register in peripheral['registers']:
-                reg_text = f"📋 {register['name']}"
+            for register in peripheral.get('registers', []):
+                reg_text = f"📋 {register.get('name', 'Unknown')}"
+                reg_desc = register.get('description', '')
+                # 安全地截取描述文本
+                desc_preview = reg_desc[:50] if reg_desc else ''
                 self.tree.insert(periph_node, 'end', text=reg_text,
-                               values=(f"{register['size']} bits",
-                                      register['address'],
-                                      register['description'][:50]),
+                               values=(f"{register.get('size', '32')} bits",
+                                      register.get('address', ''),
+                                      desc_preview),
                                tags=('register',))
         
         # 配置标签颜色
@@ -435,8 +492,14 @@ class SVDViewerGUI:
         # 保存当前寄存器数据供点击事件使用
         self.current_register_data = register_data
         
-        # 获取寄存器大小
-        reg_size = int(register_data.get('size', '32'))
+        
+        # 获取寄存器大小（支持十六进制和十进制）
+        reg_size_str = register_data.get('size', '32')
+        try:
+            # 自动检测十六进制（0x前缀）或十进制
+            reg_size = int(reg_size_str, 0)  # base 0 自动检测进制
+        except (ValueError, TypeError):
+            reg_size = 32  # 默认32位
         fields = register_data['fields']
         
         # 清空canvas并显示frame
