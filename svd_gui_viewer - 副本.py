@@ -1,0 +1,481 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SVD文件图形化查看器
+使用Tkinter创建GUI界面，以树形结构显示SVD文件内容
+"""
+
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox, scrolledtext
+import xml.etree.ElementTree as ET
+import os
+
+
+class SVDViewerGUI:
+    """SVD文件图形化查看器主类"""
+    
+    def __init__(self, root):
+        """初始化GUI界面"""
+        self.root = root
+        self.root.title("SVD 文件查看器")
+        self.root.geometry("1200x700")
+        
+        # 当前加载的设备信息
+        self.device_info = None
+        self.current_file = None
+        
+        # 创建界面
+        self.create_widgets()
+        
+    def create_widgets(self):
+        """创建所有GUI组件"""
+        
+        # ====== 顶部工具栏 ======
+        toolbar = tk.Frame(self.root, relief=tk.RAISED, borderwidth=2)
+        toolbar.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        
+        # 打开文件按钮
+        btn_open = tk.Button(toolbar, text="📂 打开SVD文件", command=self.open_file, 
+                            font=("Arial", 10), bg="#4CAF50", fg="white", padx=10, pady=5)
+        btn_open.pack(side=tk.LEFT, padx=5)
+        
+        # 展开所有按钮
+        btn_expand = tk.Button(toolbar, text="➕ 展开所有", command=self.expand_all,
+                              font=("Arial", 10), padx=10, pady=5)
+        btn_expand.pack(side=tk.LEFT, padx=5)
+        
+        # 折叠所有按钮
+        btn_collapse = tk.Button(toolbar, text="➖ 折叠所有", command=self.collapse_all,
+                                font=("Arial", 10), padx=10, pady=5)
+        btn_collapse.pack(side=tk.LEFT, padx=5)
+        
+        # 导出按钮
+        btn_export = tk.Button(toolbar, text="💾 导出文本", command=self.export_to_text,
+                              font=("Arial", 10), padx=10, pady=5)
+        btn_export.pack(side=tk.LEFT, padx=5)
+        
+        # 文件名标签
+        self.file_label = tk.Label(toolbar, text="未加载文件", font=("Arial", 10), fg="gray")
+        self.file_label.pack(side=tk.RIGHT, padx=10)
+        
+        # ====== 搜索栏 ======
+        search_frame = tk.Frame(self.root)
+        search_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+        
+        tk.Label(search_frame, text="🔍 搜索:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
+        
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', self.on_search)
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, 
+                               font=("Arial", 10), width=30)
+        search_entry.pack(side=tk.LEFT, padx=5)
+        
+        btn_clear_search = tk.Button(search_frame, text="✖ 清除", 
+                                     command=self.clear_search, font=("Arial", 9))
+        btn_clear_search.pack(side=tk.LEFT, padx=5)
+        
+        # 统计信息标签
+        self.stats_label = tk.Label(search_frame, text="", font=("Arial", 9), fg="blue")
+        self.stats_label.pack(side=tk.RIGHT, padx=10)
+        
+        # ====== 主内容区域 ======
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=5)
+        
+        # 左侧：树形视图
+        tree_frame = tk.Frame(main_frame)
+        tree_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        tk.Label(tree_frame, text="外设与寄存器树形结构", 
+                font=("Arial", 11, "bold")).pack(side=tk.TOP, pady=5)
+        
+        # 创建树形控件
+        tree_scroll_y = tk.Scrollbar(tree_frame, orient=tk.VERTICAL)
+        tree_scroll_x = tk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
+        
+        self.tree = ttk.Treeview(tree_frame, 
+                                yscrollcommand=tree_scroll_y.set,
+                                xscrollcommand=tree_scroll_x.set,
+                                selectmode='browse')
+        
+        tree_scroll_y.config(command=self.tree.yview)
+        tree_scroll_x.config(command=self.tree.xview)
+        tree_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
+        tree_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # 配置列
+        self.tree['columns'] = ('value', 'address', 'description')
+        self.tree.column('#0', width=250, minwidth=200)
+        self.tree.column('value', width=150, minwidth=100)
+        self.tree.column('address', width=120, minwidth=100)
+        self.tree.column('description', width=350, minwidth=200)
+        
+        self.tree.heading('#0', text='名称', anchor=tk.W)
+        self.tree.heading('value', text='数值/数量', anchor=tk.W)
+        self.tree.heading('address', text='地址', anchor=tk.W)
+        self.tree.heading('description', text='描述', anchor=tk.W)
+        
+        # 绑定选择事件
+        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+        
+        # 右侧：详细信息面板
+        detail_frame = tk.Frame(main_frame, width=350, relief=tk.RIDGE, borderwidth=2)
+        detail_frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=(10, 0))
+        detail_frame.pack_propagate(False)
+        
+        tk.Label(detail_frame, text="详细信息", 
+                font=("Arial", 11, "bold")).pack(side=tk.TOP, pady=5)
+        
+        self.detail_text = scrolledtext.ScrolledText(detail_frame, 
+                                                     wrap=tk.WORD, 
+                                                     font=("Courier New", 9),
+                                                     bg="#f5f5f5")
+        self.detail_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # ====== 底部状态栏 ======
+        status_bar = tk.Frame(self.root, relief=tk.SUNKEN, borderwidth=1)
+        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        self.status_label = tk.Label(status_bar, text="就绪", 
+                                     font=("Arial", 9), anchor=tk.W)
+        self.status_label.pack(side=tk.LEFT, padx=10, pady=2)
+        
+    def open_file(self):
+        """打开SVD文件"""
+        file_path = filedialog.askopenfilename(
+            title="选择SVD文件",
+            filetypes=[("SVD文件", "*.svd"), ("XML文件", "*.xml"), ("所有文件", "*.*")]
+        )
+        
+        if file_path:
+            self.load_svd_file(file_path)
+    
+    def load_svd_file(self, file_path):
+        """加载并解析SVD文件"""
+        try:
+            self.status_label.config(text=f"正在加载 {os.path.basename(file_path)}...")
+            self.root.update()
+            
+            # 解析SVD文件
+            self.device_info = self.parse_svd(file_path)
+            
+            if self.device_info:
+                self.current_file = file_path
+                self.file_label.config(text=f"📄 {os.path.basename(file_path)}", fg="green")
+                
+                # 显示到树形控件
+                self.populate_tree()
+                
+                # 更新统计信息
+                total_regs = sum(len(p['registers']) for p in self.device_info['peripherals'])
+                self.stats_label.config(
+                    text=f"外设: {len(self.device_info['peripherals'])} | 寄存器: {total_regs}"
+                )
+                
+                self.status_label.config(text=f"成功加载 {os.path.basename(file_path)}")
+                messagebox.showinfo("成功", f"成功加载SVD文件！\n\n外设数量: {len(self.device_info['peripherals'])}\n寄存器总数: {total_regs}")
+            else:
+                self.status_label.config(text="加载失败")
+                messagebox.showerror("错误", "无法解析SVD文件")
+                
+        except Exception as e:
+            self.status_label.config(text="加载出错")
+            messagebox.showerror("错误", f"加载文件时出错：\n{str(e)}")
+    
+    def parse_svd(self, svd_file):
+        """解析SVD文件（与命令行版本相同）"""
+        try:
+            tree = ET.parse(svd_file)
+            root = tree.getroot()
+            
+            device_info = {
+                'name': root.find('name').text if root.find('name') is not None else 'Unknown',
+                'vendor': root.find('vendor').text if root.find('vendor') is not None else '',
+                'version': root.find('version').text if root.find('version') is not None else '',
+                'description': root.find('description').text if root.find('description') is not None else '',
+                'peripherals': []
+            }
+            
+            peripherals_elem = root.find('peripherals')
+            if peripherals_elem is None:
+                return device_info
+            
+            for peripheral in peripherals_elem.findall('peripheral'):
+                peripheral_name = peripheral.find('name')
+                peripheral_desc = peripheral.find('description')
+                peripheral_base = peripheral.find('baseAddress')
+                
+                if peripheral_name is None:
+                    continue
+                
+                peripheral_data = {
+                    'name': peripheral_name.text,
+                    'description': peripheral_desc.text if peripheral_desc is not None else '',
+                    'base_address': peripheral_base.text if peripheral_base is not None else '0x0',
+                    'registers': []
+                }
+                
+                # 解析寄存器
+                registers_elem = peripheral.find('registers')
+                if registers_elem is not None:
+                    for register in registers_elem.findall('register'):
+                        reg_name = register.find('name')
+                        reg_desc = register.find('description')
+                        reg_offset = register.find('addressOffset')
+                        reg_size = register.find('size')
+                        reg_reset = register.find('resetValue')
+                        
+                        if reg_name is None:
+                            continue
+                        
+                        # 计算绝对地址
+                        base_addr = int(peripheral_data['base_address'], 16)
+                        offset = int(reg_offset.text, 16) if reg_offset is not None else 0
+                        absolute_addr = base_addr + offset
+                        
+                        register_data = {
+                            'name': reg_name.text,
+                            'description': reg_desc.text if reg_desc is not None else '',
+                            'offset': reg_offset.text if reg_offset is not None else '0x0',
+                            'address': f'0x{absolute_addr:08X}',
+                            'size': reg_size.text if reg_size is not None else '32',
+                            'reset_value': reg_reset.text if reg_reset is not None else ''
+                        }
+                        
+                        peripheral_data['registers'].append(register_data)
+                
+                device_info['peripherals'].append(peripheral_data)
+            
+            return device_info
+            
+        except Exception as e:
+            print(f"解析错误: {e}")
+            return None
+    
+    def populate_tree(self):
+        """填充树形控件"""
+        # 清空现有内容
+        self.tree.delete(*self.tree.get_children())
+        
+        if not self.device_info:
+            return
+        
+        # 添加根节点（设备）
+        device_name = self.device_info['name']
+        device_desc = self.device_info.get('description', '')
+        vendor = self.device_info.get('vendor', '')
+        
+        root_text = f"📱 {device_name}"
+        if vendor:
+            root_text += f" ({vendor})"
+        
+        device_node = self.tree.insert('', 'end', text=root_text,
+                                      values=('', '', device_desc),
+                                      tags=('device',))
+        
+        # 添加外设和寄存器
+        for peripheral in self.device_info['peripherals']:
+            # 外设节点
+            periph_text = f"📦 {peripheral['name']}"
+            periph_node = self.tree.insert(device_node, 'end', text=periph_text,
+                                          values=(f"{len(peripheral['registers'])} 个寄存器", 
+                                                 peripheral['base_address'],
+                                                 peripheral['description']),
+                                          tags=('peripheral',))
+            
+            # 寄存器节点
+            for register in peripheral['registers']:
+                reg_text = f"📋 {register['name']}"
+                self.tree.insert(periph_node, 'end', text=reg_text,
+                               values=(f"{register['size']} bits",
+                                      register['address'],
+                                      register['description'][:50]),
+                               tags=('register',))
+        
+        # 配置标签颜色
+        self.tree.tag_configure('device', font=('Arial', 10, 'bold'))
+        self.tree.tag_configure('peripheral', font=('Arial', 9, 'bold'), foreground='blue')
+        self.tree.tag_configure('register', font=('Arial', 9))
+    
+    def on_tree_select(self, event):
+        """树形控件选择事件"""
+        selection = self.tree.selection()
+        if not selection:
+            return
+        
+        item = selection[0]
+        item_text = self.tree.item(item, 'text')
+        item_values = self.tree.item(item, 'values')
+        item_tags = self.tree.item(item, 'tags')
+        
+        # 清空详细信息
+        self.detail_text.delete('1.0', tk.END)
+        
+        # 显示详细信息
+        self.detail_text.insert('1.0', f"{'='*40}\n")
+        self.detail_text.insert(tk.END, f"{item_text.replace('📱 ', '').replace('📦 ', '').replace('📋 ', '')}\n")
+        self.detail_text.insert(tk.END, f"{'='*40}\n\n")
+        
+        if item_values:
+            if len(item_values) > 0 and item_values[0]:
+                self.detail_text.insert(tk.END, f"数值: {item_values[0]}\n")
+            if len(item_values) > 1 and item_values[1]:
+                self.detail_text.insert(tk.END, f"地址: {item_values[1]}\n")
+            if len(item_values) > 2 and item_values[2]:
+                self.detail_text.insert(tk.END, f"\n描述:\n{item_values[2]}\n")
+        
+        # 根据类型显示不同信息
+        if 'register' in item_tags:
+            self.detail_text.insert(tk.END, f"\n类型: 寄存器\n")
+        elif 'peripheral' in item_tags:
+            self.detail_text.insert(tk.END, f"\n类型: 外设模块\n")
+        elif 'device' in item_tags:
+            self.detail_text.insert(tk.END, f"\n类型: 设备\n")
+            if self.device_info:
+                vendor = self.device_info.get('vendor', '')
+                version = self.device_info.get('version', '')
+                if vendor:
+                    self.detail_text.insert(tk.END, f"厂商: {vendor}\n")
+                if version:
+                    self.detail_text.insert(tk.END, f"版本: {version}\n")
+    
+    def expand_all(self):
+        """展开所有节点"""
+        def expand_recursive(item):
+            self.tree.item(item, open=True)
+            for child in self.tree.get_children(item):
+                expand_recursive(child)
+        
+        for item in self.tree.get_children():
+            expand_recursive(item)
+        
+        self.status_label.config(text="已展开所有节点")
+    
+    def collapse_all(self):
+        """折叠所有节点"""
+        def collapse_recursive(item):
+            self.tree.item(item, open=False)
+            for child in self.tree.get_children(item):
+                collapse_recursive(child)
+        
+        for item in self.tree.get_children():
+            collapse_recursive(item)
+        
+        self.status_label.config(text="已折叠所有节点")
+    
+    def on_search(self, *args):
+        """搜索功能"""
+        search_text = self.search_var.get().lower()
+        
+        if not search_text:
+            # 恢复所有项目
+            self.populate_tree()
+            return
+        
+        # 高亮匹配项
+        self.highlight_search_results(search_text)
+    
+    def highlight_search_results(self, search_text):
+        """高亮搜索结果"""
+        # 清除之前的高亮
+        for tag in self.tree.tag_names():
+            if tag.startswith('search_'):
+                self.tree.tag_configure(tag, background='')
+        
+        # 搜索并高亮
+        matches = []
+        
+        def search_recursive(item):
+            item_text = self.tree.item(item, 'text').lower()
+            item_values = self.tree.item(item, 'values')
+            
+            # 检查是否匹配
+            is_match = search_text in item_text
+            if not is_match and item_values:
+                for value in item_values:
+                    if search_text in str(value).lower():
+                        is_match = True
+                        break
+            
+            if is_match:
+                matches.append(item)
+                # 高亮显示
+                current_tags = list(self.tree.item(item, 'tags'))
+                current_tags.append(f'search_{len(matches)}')
+                self.tree.item(item, tags=current_tags)
+                self.tree.tag_configure(f'search_{len(matches)}', background='yellow')
+                
+                # 展开父节点
+                parent = self.tree.parent(item)
+                while parent:
+                    self.tree.item(parent, open=True)
+                    parent = self.tree.parent(parent)
+            
+            # 递归子节点
+            for child in self.tree.get_children(item):
+                search_recursive(child)
+        
+        for item in self.tree.get_children():
+            search_recursive(item)
+        
+        self.status_label.config(text=f"找到 {len(matches)} 个匹配项")
+    
+    def clear_search(self):
+        """清除搜索"""
+        self.search_var.set('')
+        self.populate_tree()
+        self.status_label.config(text="搜索已清除")
+    
+    def export_to_text(self):
+        """导出到文本文件"""
+        if not self.device_info:
+            messagebox.showwarning("警告", "请先加载SVD文件")
+            return
+        
+        output_file = filedialog.asksaveasfilename(
+            title="保存文本文件",
+            defaultextension=".txt",
+            filetypes=[("文本文件", "*.txt"), ("所有文件", "*.*")],
+            initialfile=f"{self.device_info['name']}_registers.txt"
+        )
+        
+        if output_file:
+            try:
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(f"Device: {self.device_info['name']}\n")
+                    f.write("=" * 100 + "\n\n")
+                    
+                    for peripheral in self.device_info['peripherals']:
+                        f.write(f"\n外设: {peripheral['name']}\n")
+                        f.write(f"基地址: {peripheral['base_address']}\n")
+                        f.write(f"描述: {peripheral['description']}\n")
+                        f.write(f"寄存器数量: {len(peripheral['registers'])}\n")
+                        f.write("-" * 100 + "\n")
+                        
+                        if peripheral['registers']:
+                            f.write(f"{'寄存器名称':<30} {'地址':<15} {'偏移':<15} {'描述'}\n")
+                            f.write("-" * 100 + "\n")
+                            
+                            for register in peripheral['registers']:
+                                f.write(f"{register['name']:<30} {register['address']:<15} "
+                                       f"{register['offset']:<15} {register['description']}\n")
+                        
+                        f.write("\n")
+                
+                messagebox.showinfo("成功", f"已导出到:\n{output_file}")
+                self.status_label.config(text=f"已导出到 {os.path.basename(output_file)}")
+                
+            except Exception as e:
+                messagebox.showerror("错误", f"导出失败:\n{str(e)}")
+
+
+def main():
+    """主函数"""
+    root = tk.Tk()
+    app = SVDViewerGUI(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

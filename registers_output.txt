@@ -1,0 +1,549 @@
+Device: TLE987x
+====================================================================================================
+
+
+外设: ADC1
+基地址: 0x40004000
+描述: ADC1 Module
+寄存器数量: 23
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CHx_EIM                        0x40004008      0x08            Channel Settings Bits for Exceptional Interrupt Measurement
+CHx_ESM                        0x4000400C      0x0C            Channel Settings Bits for Exceptional Sequence Measurement
+CTRL_STS                       0x40004000      0x00            ADC1 Control and Status Register
+DWSEL                          0x40004024      0x24            Measurement Channel Data Width Selection
+GLOBCTR                        0x40004004      0x04            Global Control Register
+GLOBSTR                        0x40004074      0x74            Global Status Register
+ICLR                           0x40004080      0x80            ADC1 Interrupt Status Clear Register
+IE                             0x4000407C      0x7C            ADC1 Interrupt Enable Register
+IS                             0x40004078      0x78            ADC1 Interrupt Status Register
+RES_OUT0                       0x40004070      0x70            ADC1 Output Channel 0
+RES_OUT1                       0x4000406C      0x6C            ADC1 Output Channel 1
+RES_OUT2                       0x40004068      0x68            ADC1 Output Channel 2
+RES_OUT3                       0x40004064      0x64            ADC1 Output Channel 3
+RES_OUT4                       0x40004060      0x60            ADC1 Output Channel 4
+RES_OUT5                       0x4000405C      0x5C            ADC1 Output Channel 5
+RES_OUT6                       0x40004058      0x58            ADC1 Output Channel 6
+RES_OUT7                       0x40004054      0x54            ADC1 Output Channel 7
+RES_OUT_EIM                    0x40004040      0x40            ADC1 Output Channel EIM
+SQ1_4                          0x40004018      0x18            Measurement Channel Enable Bits for Cycle 1 - 4
+SQ5_8                          0x4000401C      0x1C            Measurement Channel Enable Bits for Cycle 5 - 8
+SQ_FB                          0x40004050      0x50            Sequencer Feedback Register
+STC_0_3                        0x40004028      0x28            Measurement Channel Sample Time Control 0 - 3
+STC_4_7                        0x4000402C      0x2C            Measurement Channel Sample Time Control 4 - 7
+
+
+外设: ADC2
+基地址: 0x4801C000
+描述: ADC2 Module
+寄存器数量: 45
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CAL_CH0_1                      0x4801C034      0x34            Calibration for Channel 0 and 1
+CAL_CH2_3                      0x4801C038      0x38            Calibration for Channel 2 and 3
+CAL_CH4_5                      0x4801C03C      0x3C            Calibration for Channel 4 and 5
+CAL_CH6_7                      0x4801C040      0x40            Calibration for Channel 6 and 7
+CAL_CH8_9                      0x4801C044      0x44            Calibration for Channel 8 and 9
+CHx_EIM                        0x4801C008      0x08            Channel Settings Bits for Exceptional Interrupt Measurement
+CHx_ESM                        0x4801C00C      0x0C            Channel Settings Bits for Exceptional Sequence Measurement
+CNT0_3_LOWER                   0x4801C098      0x98            Lower Counter Trigger Level Channel 0 - 3
+CNT0_3_UPPER                   0x4801C0A4      0xA4            Upper Counter Trigger Level Channel 0 - 3
+CNT4_5_LOWER                   0x4801C09C      0x9C            Lower Counter Trigger Level Channel 4 and 5
+CNT4_5_UPPER                   0x4801C0A8      0xA8            Upper Counter Trigger Level Channel 4 and 5
+CNT6_9_LOWER                   0x4801C0A0      0xA0            Lower Counter Trigger Level Channel 6 - 9
+CNT6_9_UPPER                   0x4801C0AC      0xAC            Upper Counter Trigger Level Channel 6 -9
+CTRL1                          0x4801C014      0x14            Measurement Unit Control Register 1
+CTRL2                          0x4801C018      0x18            Measurement Unit Control Register 2
+CTRL4                          0x4801C01C      0x1C            Measurement Unit Control Register 4
+CTRL_STS                       0x4801C000      0x00            ADC2 Control and Status Register
+FILT_LO_CTRL                   0x4801C07C      0x7C            Lower Threshold Filter Enable
+FILT_OUT0                      0x4801C050      0x50            ADC or Filter Output Channel 0
+FILT_OUT1                      0x4801C054      0x54            ADC or Filter Output Channel 1
+FILT_OUT2                      0x4801C058      0x58            ADC or Filter Output Channel 2
+FILT_OUT3                      0x4801C05C      0x5C            ADC or Filter Output Channel 3
+FILT_OUT4                      0x4801C060      0x60            ADC or Filter Output Channel 4
+FILT_OUT5                      0x4801C064      0x64            ADC or Filter Output Channel 5
+FILT_OUT6                      0x4801C068      0x68            ADC or Filter Output Channel 6
+FILT_OUT7                      0x4801C06C      0x6C            ADC or Filter Output Channel 7
+FILT_OUT8                      0x4801C070      0x70            ADC or Filter Output Channel 8
+FILT_OUT9                      0x4801C074      0x74            ADC or Filter Output Channel 9
+FILT_UP_CTRL                   0x4801C078      0x78            Upper Threshold Filter Enable
+FILTCOEFF0_5                   0x4801C048      0x48            Filter Coefficients ADC Channel 0-5
+FILTCOEFF6_9                   0x4801C04C      0x4C            Filter Coefficents ADC Channel 6-9
+HV_STS                         0x4801C0BC      0xBC            ADC2 HV Status Register
+MMODE0_5                       0x4801C0B0      0xB0            Overvoltage Measurement Mode of Ch 0-5
+SQ1_4                          0x4801C020      0x20            Measurement Channel Enable Bits for Cycle 1-4
+SQ1_8_int                      0x4801C02C      0x2C            Measurement Channel Enable Bits for Cycle 1 - 8
+SQ5_8                          0x4801C024      0x24            Measurement Channel Enable Bits for Cycle 5 - 8
+SQ9_10                         0x4801C028      0x28            Measurement Channel Enable Bits for Cycle 9 - 10
+SQ9_10_int                     0x4801C030      0x30            Measurement Channel Enable Bits for Cycle 9 and 10
+SQ_FB                          0x4801C004      0x04            Sequencer Feedback Register
+TH0_3_LOWER                    0x4801C080      0x80            Lower Comparator Trigger Level Channel 0 -3
+TH0_3_UPPER                    0x4801C08C      0x8C            Upper Comparator Trigger Level Channel 0-3
+TH4_5_LOWER                    0x4801C084      0x84            Lower Comparator Trigger Level Channel 4 and 5
+TH4_5_UPPER                    0x4801C090      0x90            Upper Comparator Trigger Level Channel 4 -5
+TH6_9_LOWER                    0x4801C088      0x88            Lower Comparator Trigger Level Channel 6 -9
+TH6_9_UPPER                    0x4801C094      0x94            Upper Comparator Trigger Level Channel 6 -9
+
+
+外设: BDRV
+基地址: 0x40034000
+描述: Bridge Driver
+寄存器数量: 8
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CP_CLK_CTRL                    0x40034024      0x24            Charge Pump Clock Control Register
+CP_CTRL_STS                    0x40034020      0x20            Charge Pump Control and Status Register
+CTRL1                          0x40034000      0x00            H-Bridge Driver Control 1
+CTRL2                          0x40034004      0x04            H-Bridge Driver Control 2
+CTRL3                          0x40034008      0x08            H-Bridge Driver Control 3
+OFF_SEQ_CTRL                   0x40034010      0x10            Turn on Slewrate Sequencer Control
+ON_SEQ_CTRL                    0x40034014      0x14            Turn off Slewrate Sequencer Control
+TRIM_DRVx                      0x40034018      0x18            Trimming of Driver
+
+
+外设: CCU6
+基地址: 0x4000C000
+描述: Capture Compare Unit 6
+寄存器数量: 32
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CC60R                          0x4000C034      0x34            Capture/Compare Register for Channel CC60
+CC60SR                         0x4000C014      0x14            Capture/Compare Shadow Register for Channel CC60
+CC61R                          0x4000C038      0x38            Capture/Compare Register for Channel CC61
+CC61SR                         0x4000C018      0x18            Capture/Compare Shadow Register for Channel CC61
+CC62R                          0x4000C03C      0x3C            Capture/Compare Register for Channel CC62
+CC62SR                         0x4000C01C      0x1C            Capture/Compare Shadow Register for Channel CC62
+CC63R                          0x4000C000      0x00            Capture/Compare Register for Channel CC63
+CC63SR                         0x4000C020      0x20            Capture/Compare Shadow Register for Channel CC63
+CMPMODIF                       0x4000C010      0x10            Compare State Modification Register
+CMPSTAT                        0x4000C080      0x80            Compare State Register
+IEN                            0x4000C044      0x44            Capture/Compare Interrupt Enable Register
+INP                            0x4000C048      0x48            Capture/Compare Interrupt Node Pointer Register
+IS                             0x4000C068      0x68            Capture/Compare Interrupt Status Register
+ISR                            0x4000C00C      0x0C            Capture/Compare Interrupt Status Reset Register
+ISS                            0x4000C04C      0x4C            Capture/Compare Interrupt Status Set Register
+MCMCTR                         0x4000C054      0x54            Multi-Channel Mode Control Register
+MCMOUT                         0x4000C064      0x64            Multi-Channel Mode Output Register
+MCMOUTS                        0x4000C008      0x08            Multi-Channel Mode Output Shadow Register
+MODCTR                         0x4000C05C      0x5C            Modulation Control Register
+PISEL0                         0x4000C06C      0x6C            Port Input Select Register 0
+PISEL2                         0x4000C074      0x74            Port Input Select Register 2
+PSLR                           0x4000C050      0x50            Passive State Level Register
+T12                            0x4000C078      0x78            Timer T12 Counter Register
+T12DTC                         0x4000C02C      0x2C            Timer T12 Dead-Time Control Register
+T12MSEL                        0x4000C040      0x40            Capture/Compare T12 Mode Select Register
+T12PR                          0x4000C024      0x24            Timer T12 Period Register
+T13                            0x4000C07C      0x7C            Timer T13 Counter Register
+T13PR                          0x4000C028      0x28            Timer T13 Period Register
+TCTR0                          0x4000C030      0x30            Timer Control Register 0
+TCTR2                          0x4000C058      0x58            Timer Control Register 2
+TCTR4                          0x4000C004      0x04            Timer Control Register 4
+TRPCTR                         0x4000C060      0x60            Trap Control Register
+
+
+外设: CPU
+基地址: 0xE000E000
+描述: CPU Core
+寄存器数量: 30
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+AFSR                           0xE000ED3C      0xD3C           Auxiliary Fault Status Register
+AIRCR                          0xE000ED0C      0xD0C           Application Interrupt/Reset Control Register
+BFAR                           0xE000ED38      0xD38           Bus Fault Status Register
+CCR                            0xE000ED14      0xD14           Configuration Control Register
+CFSR                           0xE000ED28      0xD28           Configurable Fault Status Register
+CPUID                          0xE000ED00      0xD00           CPU ID Base Register
+DFSR                           0xE000ED30      0xD30           Debug Fault Status Register
+HFSR                           0xE000ED2C      0xD2C           Hard Fault Status Register
+ICSR                           0xE000ED04      0xD04           Interrupt Control State Register
+ICT                            0xE000E004      0x004           Interrupt Controller Type
+MMFAR                          0xE000ED34      0xD34           MemManage Fault Status Register
+NVIC_IABR0                     0xE000E300      0x300           Active Bit Register Interrupt Active Flags
+NVIC_ICER0                     0xE000E180      0x180           Interrupt Clear-Enable
+NVIC_ICPR0                     0xE000E280      0x280           Interrupt Clear-Pending
+NVIC_IPR0                      0xE000E400      0x400           Interrupt Priority
+NVIC_IPR1                      0xE000E404      0x404           Interrupt Priority
+NVIC_IPR2                      0xE000E408      0x408           Interrupt Priority
+NVIC_IPR3                      0xE000E40C      0x40C           Interrupt Priority
+NVIC_ISER0                     0xE000E100      0x100           Interrupt Set-Enable
+NVIC_ISPR0                     0xE000E200      0x200           Interrupt Set-Pending
+SCR                            0xE000ED10      0xD10           System Control Register
+SHCSR                          0xE000ED24      0xD24           System Handler Control and State Register
+SHPR1                          0xE000ED18      0xD18           System Handler Priority Register 1
+SHPR2                          0xE000ED1C      0xD1C           System Handler Priority Register 2
+SHPR3                          0xE000ED20      0xD20           System Handler Priority Register 3
+SYSTICK_CAL                    0xE000E01C      0x01C           SysTick Calibration Value
+SYSTICK_CS                     0xE000E010      0x010           SysTick Control and Status
+SYSTICK_CUR                    0xE000E018      0x018           SysTick Current Value
+SYSTICK_RL                     0xE000E014      0x014           SysTick Reload Value
+VTOR                           0xE000ED08      0xD08           Vector Table Offset Register
+
+
+外设: DMA
+基地址: 0x50014000
+描述: Direct Memeory Access
+寄存器数量: 17
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+ALT_CTRL_BASE_PTR              0x5001400C      0x0C            Channel Alternate Control Data Base Pointer
+CFG                            0x50014004      0x04            DMA Configuration
+CHNL_ENABLE_CLR                0x5001402C      0x2C            Channel Enable Clear
+CHNL_ENABLE_SET                0x50014028      0x28            Channel Enable Set
+CHNL_PRI_ALT_CLR               0x50014034      0x34            Channel Primary-Alternate Clear
+CHNL_PRI_ALT_SET               0x50014030      0x30            Channel Primary-Alternate Set
+CHNL_PRIORITY_CLR              0x5001403C      0x3C            Channel Priority Clear
+CHNL_PRIORITY_SET              0x50014038      0x38            Channel Priority Set
+CHNL_REQ_MASK_CLR              0x50014024      0x24            Channel Request Mask Clear
+CHNL_REQ_MASK_SET              0x50014020      0x20            Channel Request Mask Set
+CHNL_SW_REQUEST                0x50014014      0x14            Channel Software Request
+CHNL_USEBURST_CLR              0x5001401C      0x1C            Channel Useburst Clear
+CHNL_USEBURST_SET              0x50014018      0x18            Channel Useburst Set
+CTRL_BASE_PTR                  0x50014008      0x08            Channel Control Data Base Pointer
+ERR_CLR                        0x5001404C      0x4C            Bus Error Clear
+STATUS                         0x50014000      0x00            DMA Status
+WAITONREQ_STATUS               0x50014010      0x10            Channel Wait on Request Status
+
+
+外设: GPT12E
+基地址: 0x40010000
+描述: General Purpose Timer 12E
+寄存器数量: 13
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CAPREL                         0x4001001C      0x1C            Capture/Reload Register
+ID                             0x40010000      0x00            Module Identification Register
+PISEL                          0x40010004      0x04            Port Input Select Register
+T2                             0x40010020      0x20            Timer T2 Count Register
+T2CON                          0x40010008      0x08            Timer T2 Control Register
+T3                             0x40010024      0x24            Timer T3 Count Register
+T3CON                          0x4001000C      0x0C            Timer T3 Control Register
+T4                             0x40010028      0x28            Timer T4 Count Register
+T4CON                          0x40010010      0x10            Timer T4 Control Register
+T5                             0x4001002C      0x2C            Timer 5 Count Register
+T5CON                          0x40010014      0x14            Timer 5 Control Register
+T6                             0x40010030      0x30            Timer T6 Count Register
+T6CON                          0x40010018      0x18            Timer T6 Control Register
+
+
+外设: LIN
+基地址: 0x4801E000
+描述: Local Interconnect Network
+寄存器数量: 1
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CTRL_STS                       0x4801E000      0x00            LIN Transceiver Control and Status
+
+
+外设: MF
+基地址: 0x48018000
+描述: Measurement Function
+寄存器数量: 8
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+BEMFC_CTRL_STS                 0x48018008      0x08            BEMF Comparator Control Status Register
+CSA_CTRL                       0x4801800C      0x0C            Current Sense Amplifier Control Register
+P2_ADCSEL_CTRL                 0x48018000      0x00            Port 2 ADC Selection Control Register
+REF1_STS                       0x48018014      0x14            Reference 1 Status Register
+REF2_CTRL                      0x48018018      0x18            Reference 2 Control Register
+TEMPSENSE_CTRL                 0x48018010      0x10            Temperature Sensor Control Register
+TRIM_BEMFx                     0x48018020      0x20            Trimming of Driver
+VMON_SEN_CTRL                  0x48018004      0x04            Supply Sense Control Register
+
+
+外设: PMU
+基地址: 0x50004000
+描述: Power Management Unit
+寄存器数量: 31
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CNF_CYC_SAMPLE_DEL             0x50004030      0x030           Sample Delay in Cyclic Sense Register
+CNF_CYC_SENSE                  0x50004028      0x028           Dead Time in Cyclic Sense Register
+CNF_CYC_WAKE                   0x5000402C      0x02C           Dead Time in Cyclic Wake Register
+CNF_PMU_SETTINGS               0x50004020      0x020           PMU Settings Register
+CNF_RST_TFB                    0x5000406C      0x06C           Reset Blind Time Register
+CNF_WAKE_FILTER                0x500040AC      0x0AC           PMU Wake-up Timing Register
+GPUDATA00                      0x500040C0      0x0C0           General Purpose User DATA0
+GPUDATA01                      0x500040C4      0x0C4           General Purpose User DATA1
+GPUDATA02                      0x500040C8      0x0C8           General Purpose User DATA2
+GPUDATA03                      0x500040CC      0x0CC           General Purpose User DATA3
+GPUDATA04                      0x500040D0      0x0D0           General Purpose User DATA4
+GPUDATA05                      0x500040D4      0x0D4           General Purpose User DATA5
+LIN_WAKE_EN                    0x50004050      0x050           LIN Wake Enable
+MON_CNF                        0x50004034      0x034           Settings Monitor 1
+PMU_RESET_STS1                 0x50004010      0x010           Reset Status Hard Register
+PMU_RESET_STS2                 0x50004014      0x014           Reset Status Soft Register
+PMU_SUPPLY_STS                 0x50004004      0x004           Voltage Reg Status Register
+SYS_FAIL_STS                   0x50004070      0x070           System Fail Status Register
+SystemStartConfig              0x500042D4      0x2D4           System Startup Config
+VDDEXT_CTRL                    0x50004008      0x08            VDDEXT Control
+WAKE_CONF_GPIO0_CYC            0x500040E0      0xE0            Wake Port 0 Cycle Enabled Register
+WAKE_CONF_GPIO0_FALL           0x500040DC      0xDC            Wake Configuration GPIO Port 0 Falling Edge Register
+WAKE_CONF_GPIO0_RISE           0x500040D8      0xD8            Wake Configuration GPIO Port 0 Rising Edge Register
+WAKE_CONF_GPIO1_CYC            0x500040EC      0xEC            Wake Port 1 Cycle Enabled Register
+WAKE_CONF_GPIO1_FALL           0x500040E8      0xE8            Wake Configuration GPIO Port 1 Falling Edge Register
+WAKE_CONF_GPIO1_RISE           0x500040E4      0xE4            Wake Configuration GPIO Port 1 Rising Edge Register
+WAKE_STATUS                    0x50004000      0x000           Main wake status register
+WAKE_STS_FAIL                  0x50004080      0x080           Wake Status Fail Register
+WAKE_STS_GPIO0                 0x50004088      0x088           Wake Status GPIO 0 Register
+WAKE_STS_GPIO1                 0x5000408C      0x08C           Wake Status GPIO 1 Register
+WAKE_STS_MON                   0x50004084      0x084           Wake Source MON Input Register
+
+
+外设: PORT
+基地址: 0x48028000
+描述: GPIO PORTs
+寄存器数量: 18
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+P0_ALTSEL0                     0x48028030      0x30            Port 0 Alternate Select Register
+P0_ALTSEL1                     0x48028034      0x34            Port 0 Alternate Select Register
+P0_DATA                        0x48028000      0x00            Port 0 Data Register
+P0_DIR                         0x48028004      0x04            Port 0 Direction Register
+P0_OD                          0x48028040      0x40            Port 0 Open Drain Control Register
+P0_PUDEN                       0x4802801C      0x1C            Port 0 Pull-Up/Pull-Down Enable Register
+P0_PUDSEL                      0x48028018      0x18            Port 0 Pull-Up/Pull-Down Select Register
+P1_ALTSEL0                     0x48028038      0x38            Port 1 Alternate Select Register
+P1_ALTSEL1                     0x4802803C      0x3C            Port 1 Alternate Select Register
+P1_DATA                        0x48028008      0x08            Port 1 Data Register
+P1_DIR                         0x4802800C      0x0C            Port 1 Direction Register
+P1_OD                          0x48028044      0x44            Port 1 Open Drain Control Register
+P1_PUDEN                       0x48028024      0x24            Port 1 Pull-Up/Pull-Down Enable Register
+P1_PUDSEL                      0x48028020      0x20            Port 1 Pull-Up/Pull-Down Select Register
+P2_DATA                        0x48028010      0x10            Port 2 Data Register
+P2_DIR                         0x48028014      0x14            Port 2 Direction Register
+P2_PUDEN                       0x4802802C      0x2C            Port 2 Pull-Up/Pull-Down Enable Register
+P2_PUDSEL                      0x48028028      0x28            Port 2 Pull-Up/Pull-Down Select Register
+
+
+外设: SCU
+基地址: 0x50005000
+描述: System Control Unit
+寄存器数量: 81
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+APCLK1                         0x50005058      0x058           Analog Peripheral Clock Register 1, RESET_TYPE_4
+APCLK2                         0x5000505C      0x05C           Analog Peripheral Clock Register 2, RESET_TYPE_4
+APCLK_CTRL1                    0x50005054      0x054           Analog Peripheral Clock Control 1 Register, RESET_TYPE_4
+APCLK_CTRL2                    0x5000506C      0x06C           Analog Peripheral Clock Control 2 Register, RESET_TYPE_4
+BCON1                          0x50005088      0x088           Baud Rate Control Register 1, RESET_TYPE_3
+BCON2                          0x50005098      0x098           Baud Rate Control Register 2, RESET_TYPE_3
+BGH1                           0x50005090      0x090           Baud Rate Timer/Reload Register, High Byte, RESET_TYPE_3
+BGH2                           0x500050A0      0x0A0           Baud Rate Timer/Reload Register, High Byte, RESET_TYPE_3
+BGL1                           0x5000508C      0x08C           Baud Rate Timer/Reload Register, Low Byte 1, RESET_TYPE_3
+BGL2                           0x5000509C      0x09C           Baud Rate Timer/Reload Register, Low Byte 2, RESET_TYPE_3
+CMCON1                         0x50005048      0x048           Clock Control Register 1, RESET_TYPE_4
+CMCON2                         0x5000504C      0x04C           Clock Control Register 2, RESET_TYPE_4
+COCON                          0x500050B4      0x0B4           Clock Output Control Register, RESET_TYPE_4
+DMAIEN1                        0x50005144      0x144           DMA Interrupt Enable Register 1, RESET_TYPE_3
+DMAIEN2                        0x50005148      0x148           DMA Interrupt Enable Register 2, RESET_TYPE_3
+DMAIRC1                        0x50005154      0x154           DMA Interrupt Control Register 1, RESET_TYPE_3
+DMAIRC1CLR                     0x50005184      0x184           DMA Interrupt Control 1 Clear Register, RESET_TYPE_3
+DMAIRC2                        0x50005158      0x158           ADC1 Interrupt Control Register 2, RESET_TYPE_3
+DMAIRC2CLR                     0x50005188      0x188           ADC1 Interrupt Control 2 Clear Register, RESET_TYPE_3
+DMASRCCLR                      0x50005198      0x198           DMA Source Selection Clear Register, RESET_TYPE_3
+DMASRCSEL                      0x5000514C      0x14C           DMA Source Selection Register, RESET_TYPE_3
+DMASRCSEL2                     0x50005180      0x180           DMA Source Selection Register 2, RESET_TYPE_3
+EDCCON                         0x500050D4      0x0D4           Error Detection and Correction Control Register, RESET_TYPE_3
+EDCSCLR                        0x5000510C      0x10C           Error Detection and Correction Status Clear Register, RESET_TYPE_3
+EDCSTAT                        0x500050D8      0x0D8           Error Detection and Correction Status Register, RESET_TYPE_4
+EXICON0                        0x50005028      0x028           External Interrupt Control Register 0, RESET_TYPE_3
+GPT12ICLR                      0x50005164      0x164           Timer and Counter Control/Status Clear Register, RESET_TYPE_3
+GPT12IEN                       0x5000515C      0x15C           General Purpose Timer 12 Interrupt Enable Register , RESET_TYPE_3
+GPT12IRC                       0x50005160      0x160           Timer and Counter Control/Status Register, RESET_TYPE_3
+GPT12PISEL                     0x500050D0      0x0D0           GPT12 Peripheral Input Select Register, RESET_TYPE_3
+ID                             0x500050A8      0x0A8           Identity Register, RESET_TYPE_3
+IEN0                           0x5000501C      0x01C           Interrupt Enable Register 0, RESET_TYPE_4
+IRCON0                         0x50005004      0x004           Interrupt Request Register 0, RESET_TYPE_3
+IRCON0CLR                      0x5000502C      0x02C           Interrupt Request 0 Clear Register, RESET_TYPE_3
+IRCON1                         0x50005008      0x008           Interrupt Request Register 1, RESET_TYPE_3
+IRCON1CLR                      0x50005178      0x178           Interrupt Request 1 Clear Register, RESET_TYPE_3
+IRCON2                         0x5000500C      0x00C           Interrupt Request Register 2, RESET_TYPE_3
+IRCON2CLR                      0x5000517C      0x17C           Interrupt Request 2 Clear Register, RESET_TYPE_3
+IRCON3                         0x50005010      0x010           Interrupt Request Register 3, RESET_TYPE_3
+IRCON3CLR                      0x50005190      0x190           Interrupt Request 3 Clear Register, RESET_TYPE_3
+IRCON4                         0x50005014      0x014           Interrupt Request Register 4, RESET_TYPE_3
+IRCON4CLR                      0x50005194      0x194           Interrupt Request 4 Clear Register, RESET_TYPE_3
+LINSCLR                        0x500050A4      0x0A4           LIN Status Clear Register, RESET_TYPE_3
+LINST                          0x50005094      0x094           LIN Status Register, RESET_TYPE_3
+MEM_ACC_STS                    0x500050E4      0x0E4           Memory Access Status Register, RESET_TYPE_3
+MEMSTAT                        0x500050DC      0x0DC           Memory Status Register, RESET_TYPE_3
+MODIEN1                        0x50005030      0x030           Peripheral Interrupt Enable Register 1, RESET_TYPE_3
+MODIEN2                        0x50005034      0x034           Peripheral Interrupt Enable Register 2, RESET_TYPE_3
+MODIEN3                        0x50005038      0x038           Peripheral Interrupt Enable Register 3, RESET_TYPE_3
+MODIEN4                        0x5000503C      0x03C           Peripheral Interrupt Enable Register 4, RESET_TYPE_3
+MODPISEL                       0x500050B8      0x0B8           Peripheral Input Select Register, RESET_TYPE_3
+MODPISEL1                      0x500050BC      0x0BC           Peripheral Input Select Register 1, RESET_TYPE_3
+MODPISEL2                      0x500050C0      0x0C0           Peripheral Input Select Register 2, RESET_TYPE_3
+MODPISEL3                      0x500050C4      0x0C4           Peripheral Input Select Register, RESET_TYPE_3
+MODSUSP1                       0x500050C8      0x0C8           Module Suspend Control Register 1, RESET_TYPE_3
+MODSUSP2                       0x500050CC      0x0CC           Module Suspend Control Register 2, RESET_TYPE_3
+NMICLR                         0x50005000      0x000           NMI Clear Register, RESET_TYPE_3
+NMICON                         0x50005024      0x024           NMI Control Register, RESET_TYPE_4
+NMISR                          0x50005018      0x018           NMI Status Register, RESET_TYPE_4
+NVM_PROT_STS                   0x500050E0      0x0E0           NVM Protection Status Register, RESET_TYPE_4
+OSC_CON                        0x500050B0      0x0B0           OSC Control Register, RESET_TYPE_4
+P0_POCON0                      0x500050E8      0x0E8           Port Output Control Register, RESET_TYPE_3
+P0_POCON1                      0x500050EC      0x0EC           Port Output Control Register, RESET_TYPE_3
+P0_POCON2                      0x500050F0      0x0F0           Port Output Control Register, RESET_TYPE_3
+P1_POCON0                      0x500050F8      0x0F8           Port Output Control Register, RESET_TYPE_3
+P1_POCON1                      0x500050FC      0x0FC           Port Output Control Register, RESET_TYPE_3
+P1_POCON2                      0x50005100      0x100           Port Output Control Register, RESET_TYPE_3
+PASSWD                         0x500050AC      0x0AC           Password Register, RESET_TYPE_3
+PLL_CON                        0x50005044      0x044           PLL Control Register, RESET_TYPE_4
+PMCON0                         0x50005040      0x040           Power Mode Control Register 0, RESET_TYPE_3
+PMCON1                         0x50005060      0x060           Peripheral Management Control Register 1, RESET_TYPE_3
+PMCON2                         0x50005064      0x064           Peripheral Management Control Register 2, RESET_TYPE_3
+RSTCON                         0x50005068      0x068           Reset Control Register, RESET_TYPE_3
+SYS_STRTUP_STS                 0x50005074      0x74            System Startup Status Register
+SYSCON0                        0x50005070      0x070           System Control Register 0, RESET_TYPE_4
+TCCR                           0x500050F4      0x0F4           Temperature Compensation Control Register, RESET_TYPE_3
+WDTCON                         0x50005050      0x050           Watchdog Timer Control Register, RESET_TYPE_3
+WDTH                           0x50005084      0x084           Watchdog Timer, High Byte, RESET_TYPE_3
+WDTL                           0x50005080      0x080           Watchdog Timer, Low Byte, RESET_TYPE_3
+WDTREL                         0x50005078      0x078           Watchdog Timer Reload Register, RESET_TYPE_3
+WDTWINB                        0x5000507C      0x07C           Watchdog Window-Boundary Count, RESET_TYPE_3
+
+
+外设: SCUPM
+基地址: 0x50006000
+描述: System Control Unit for Power Modules
+寄存器数量: 19
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+AMCLK_CTRL                     0x50006004      0x04            Analog Module Clock Control
+AMCLK_FREQ_STS                 0x50006000      0x00            Analog Module Clock Frequency Status Register
+AMCLK_TH_HYS                   0x5000600C      0x0C            Analog Module Clock Limit Register
+BDRV_IRQ_CTRL                  0x5000605C      0x5C            Bridge Driver Interrupt Control
+BDRV_IS                        0x50006058      0x58            Bridge Driver Interrrupt Status
+BDRV_ISCLR                     0x50006054      0x54            Bridge Driver Interrrupt Status Clear
+BFSTS                          0x50006080      0x80            Bus Fault Status
+BFSTS_CLR                      0x5000608C      0x8C            Bus Fault Status Clear Register
+DBFA                           0x50006084      0x84            Data Bus Fault Address Register
+PCU_CTRL_STS                   0x50006030      0x30            Power Control Unit Control Status
+SBFA                           0x50006088      0x88            System Bus Fault Address Register
+STCALIB                        0x5000606C      0x6C            System Tick Calibration Register
+SYS_IRQ_CTRL                   0x50006028      0x28            System Interrupt Control
+SYS_IS                         0x50006018      0x18            System Interrupt Status
+SYS_ISCLR                      0x50006014      0x14            System Interrupt Status Clear
+SYS_SUPPLY_IRQ_CLR             0x50006024      0x24            System Supply Interrupt Status Clear
+SYS_SUPPLY_IRQ_CTRL            0x50006020      0x20            System Supply Interrupt Control
+SYS_SUPPLY_IRQ_STS             0x5000601C      0x1C            System Supply Interrupt Status
+WDT1_TRIG                      0x50006034      0x34            WDT1 Watchdog Control
+
+
+外设: SSC1
+基地址: 0x48024000
+描述: SSC1 Module
+寄存器数量: 6
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+BR                             0x48024010      0x10            Baud Rate Timer Reload Register
+CON                            0x48024004      0x04            Control Register
+ISRCLR                         0x48024014      0x14            Interrupt Status Register Clear
+PISEL                          0x48024000      0x00            Port Input Select Register, RESET_TYPE_3
+RB                             0x4802400C      0x0C            Receiver Buffer Register
+TB                             0x48024008      0x08            Transmitter Buffer Register
+
+
+外设: SSC2
+基地址: 0x48026000
+描述: SSC2 Module
+寄存器数量: 6
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+BR                             0x48026010      0x10            Baud Rate Timer Reload Register
+CON                            0x48026004      0x04            Control Register
+ISRCLR                         0x48026014      0x14            Interrupt Status Register Clear
+PISEL                          0x48026000      0x00            Port Input Select Register, RESET_TYPE_3
+RB                             0x4802600C      0x0C            Receiver Buffer Register
+TB                             0x48026008      0x08            Transmitter Buffer Register
+
+
+外设: TIMER2
+基地址: 0x48004000
+描述: TIMER2 Module
+寄存器数量: 8
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+RC2H                           0x4800400C      0x0C            Timer 2 Reload/Capture Register, High Byte
+RC2L                           0x48004008      0x08            Timer 2 Reload/Capture Register, Low Byte
+T2CON                          0x48004000      0x00            Timer 2 Control Register
+T2CON1                         0x48004018      0x18            Timer 2 Control Register 1
+T2H                            0x48004014      0x14            Timer 2, High Byte
+T2ICLR                         0x4800401C      0x1C            Timer 2 Interrupt Clear Register
+T2L                            0x48004010      0x10            Timer 2, Low Byte
+T2MOD                          0x48004004      0x04            Timer 2 Mode Register
+
+
+外设: TIMER21
+基地址: 0x48005000
+描述: TIMER21 Module
+寄存器数量: 8
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+RC2H                           0x4800500C      0x0C            Timer 2 Reload/Capture Register, High Byte
+RC2L                           0x48005008      0x08            Timer 2 Reload/Capture Register, Low Byte
+T2CON                          0x48005000      0x00            Timer 2 Control Register
+T2CON1                         0x48005018      0x18            Timer 2 Control Register 1
+T2H                            0x48005014      0x14            Timer 2, High Byte
+T2ICLR                         0x4800501C      0x1C            Timer 2 Interrupt Clear Register
+T2L                            0x48005010      0x10            Timer 2, Low Byte
+T2MOD                          0x48005004      0x04            Timer 2 Mode Register
+
+
+外设: TIMER3
+基地址: 0x48006000
+描述: TIMER3 Module
+寄存器数量: 6
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+CMP                            0x48006004      0x04            Timer 3 Compare Value
+CNT                            0x48006008      0x08            Timer 3
+CTRL                           0x4800600C      0x0C            Timer 3 Control Register
+ISRCLR                         0x48006014      0x14            Timer 3 Interrupt Status Clear Register
+MODE_CONF                      0x48006010      0x10            Timer 3 Mode Configuration Register
+T3_TRIGG_CTRL                  0x48006000      0x00            T3 Trigger Control
+
+
+外设: UART1
+基地址: 0x48020000
+描述: UART1 Module
+寄存器数量: 3
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+SBUF                           0x48020004      0x04            Serial Data Buffer
+SCON                           0x48020000      0x00            Serial Channel Control Register
+SCONCLR                        0x48020008      0x08            Serial Channel Control Clear Register
+
+
+外设: UART2
+基地址: 0x48022000
+描述: UART2 Module
+寄存器数量: 3
+----------------------------------------------------------------------------------------------------
+寄存器名称                          地址              偏移              描述
+----------------------------------------------------------------------------------------------------
+SBUF                           0x48022004      0x04            Serial Data Buffer
+SCON                           0x48022000      0x00            Serial Channel Control Register
+SCONCLR                        0x48022008      0x08            Serial Channel Control Clear Register
+
