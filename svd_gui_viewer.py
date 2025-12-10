@@ -272,20 +272,41 @@ class SVDViewerGUI:
             messagebox.showerror("错误", f"加载文件时出错:\n{str(e)}\n\n详细信息:\n{error_details}")
     
     def parse_svd(self, svd_file):
-        """解析SVD文件（与命令行版本相同）"""
+        """解析SVD文件（支持标准SVD格式和ARM CoreSight格式）"""
         try:
             tree = ET.parse(svd_file)
             root = tree.getroot()
             
+            # 尝试从cpu元素获取设备名称（ARM CoreSight格式）
+            cpu_elem = root.find('cpu')
+            cpu_name = None
+            cpu_display_name = None
+            if cpu_elem is not None:
+                cpu_name_elem = cpu_elem.find('name')
+                cpu_display_elem = cpu_elem.find('displayName')
+                if cpu_name_elem is not None:
+                    cpu_name = cpu_name_elem.text
+                if cpu_display_elem is not None:
+                    cpu_display_name = cpu_display_elem.text
+            
             device_info = {
-                'name': root.find('name').text if root.find('name') is not None else 'Unknown',
-                'vendor': root.find('vendor').text if root.find('vendor') is not None else '',
+                'name': root.find('name').text if root.find('name') is not None else (cpu_display_name or cpu_name or 'Unknown'),
+                'vendor': root.find('vendor').text if root.find('vendor') is not None else 'ARM',
                 'version': root.find('version').text if root.find('version') is not None else '',
                 'description': root.find('description').text if root.find('description') is not None else '',
                 'peripherals': []
             }
             
+            # 检查标准SVD格式
             peripherals_elem = root.find('peripherals')
+            
+            # 如果没有标准peripherals元素，尝试解析ARM CoreSight格式
+            # ARM CoreSight格式结构: <device><cpu><groups><group>...
+            if peripherals_elem is None and cpu_elem is not None:
+                device_info = self._parse_arm_coresight_format(root, device_info)
+                return device_info
+            
+            # 如果仍然没有找到任何外设
             if peripherals_elem is None:
                 return device_info
             
@@ -434,6 +455,213 @@ class SVDViewerGUI:
         except Exception as e:
             print(f"解析错误: {e}")
             return None
+    
+    def _parse_arm_coresight_format(self, root, device_info):
+        """解析ARM CoreSight格式的SVD文件
+        
+        这种格式使用 <device><cpu><groups><group> 结构，例如Cortex-M3.svd：
+        - <group name="Core"> 直接包含CPU核心寄存器
+        - <group name="Peripherals"> 包含标准的外设定义
+        """
+        cpu_elem = root.find('cpu')
+        if cpu_elem is None:
+            return device_info
+        
+        groups_elem = cpu_elem.find('groups')
+        if groups_elem is None:
+            return device_info
+        
+        # 遍历所有group
+        for group in groups_elem.findall('group'):
+            group_name = group.find('name')
+            group_desc = group.find('description')
+            group_size = group.find('size')
+            
+            group_name_text = group_name.text if group_name is not None else 'Unknown'
+            group_desc_text = group_desc.text if group_desc is not None else ''
+            default_size = group_size.text if group_size is not None else '32'
+            
+            # 检查group是否直接包含寄存器（如Core组）
+            registers_elem = group.find('registers')
+            if registers_elem is not None:
+                # 创建一个虚拟外设来容纳这些寄存器
+                peripheral_data = {
+                    'name': group_name_text,
+                    'description': group_desc_text,
+                    'base_address': '0x00000000',  # Core寄存器没有固定地址
+                    'registers': []
+                }
+                
+                for register in registers_elem.findall('register'):
+                    reg_data = self._parse_register_element(register, 0, default_size)
+                    if reg_data:
+                        peripheral_data['registers'].append(reg_data)
+                
+                if peripheral_data['registers']:
+                    device_info['peripherals'].append(peripheral_data)
+            
+            # 检查group是否包含peripherals（如Peripherals组）
+            peripherals_elem = group.find('peripherals')
+            if peripherals_elem is not None:
+                # 构建外设字典用于derivedFrom查找
+                peripheral_dict = {}
+                for peripheral in peripherals_elem.findall('peripheral'):
+                    periph_name_elem = peripheral.find('name')
+                    if periph_name_elem is not None:
+                        peripheral_dict[periph_name_elem.text] = peripheral
+                
+                # 解析所有外设
+                for peripheral in peripherals_elem.findall('peripheral'):
+                    peripheral_name = peripheral.find('name')
+                    peripheral_desc = peripheral.find('description')
+                    peripheral_base = peripheral.find('baseAddress')
+                    
+                    if peripheral_name is None:
+                        continue
+                    
+                    peripheral_data = {
+                        'name': peripheral_name.text,
+                        'description': peripheral_desc.text if peripheral_desc is not None else '',
+                        'base_address': peripheral_base.text if peripheral_base is not None else '0x0',
+                        'registers': []
+                    }
+                    
+                    # 检查是否派生自其他外设
+                    derived_from = peripheral.get('derivedFrom')
+                    reg_elem = None
+                    
+                    if derived_from and derived_from in peripheral_dict:
+                        source_peripheral = peripheral_dict[derived_from]
+                        reg_elem = source_peripheral.find('registers')
+                    else:
+                        reg_elem = peripheral.find('registers')
+                    
+                    if reg_elem is not None:
+                        try:
+                            current_base_addr = int(peripheral_data['base_address'], 16)
+                        except ValueError:
+                            current_base_addr = 0
+                        
+                        for register in reg_elem.findall('register'):
+                            reg_data = self._parse_register_element(register, current_base_addr, default_size)
+                            if reg_data:
+                                peripheral_data['registers'].append(reg_data)
+                    
+                    if peripheral_data['registers'] or peripheral_desc is not None:
+                        device_info['peripherals'].append(peripheral_data)
+        
+        return device_info
+    
+    def _parse_register_element(self, register, base_addr, default_size='32'):
+        """解析单个寄存器元素，返回寄存器数据字典"""
+        reg_name = register.find('name')
+        reg_desc = register.find('description')
+        reg_offset = register.find('addressOffset')
+        reg_size = register.find('size')
+        reg_reset = register.find('resetValue')
+        reg_index = register.find('Index')  # ARM CoreSight格式使用Index代替addressOffset
+        
+        if reg_name is None:
+            return None
+        
+        # 计算地址
+        if reg_offset is not None and reg_offset.text:
+            try:
+                offset = int(reg_offset.text, 16)
+            except ValueError:
+                offset = int(reg_offset.text, 0) if reg_offset.text else 0
+        elif reg_index is not None and reg_index.text:
+            # 对于Core寄存器，使用Index乘以4作为偏移
+            offset = int(reg_index.text) * 4
+        else:
+            offset = 0
+        
+        absolute_addr = base_addr + offset
+        
+        # 解析size字段
+        size_str = reg_size.text if reg_size is not None else default_size
+        try:
+            size_value = int(size_str, 0)
+        except (ValueError, TypeError):
+            size_value = 32
+        
+        register_data = {
+            'name': reg_name.text,
+            'description': reg_desc.text if reg_desc is not None else '',
+            'offset': f'0x{offset:X}',
+            'address': f'0x{absolute_addr:08X}',
+            'size': str(size_value),
+            'reset_value': reg_reset.text if reg_reset is not None else '',
+            'fields': []
+        }
+        
+        # 解析字段信息
+        fields_elem = register.find('fields')
+        if fields_elem is not None:
+            for field in fields_elem.findall('field'):
+                field_data = self._parse_field_element(field)
+                if field_data:
+                    register_data['fields'].append(field_data)
+        
+        return register_data
+    
+    def _parse_field_element(self, field):
+        """解析单个字段元素，返回字段数据字典"""
+        field_name = field.find('name')
+        field_desc = field.find('description')
+        field_access = field.find('access')
+        
+        if field_name is None:
+            return None
+        
+        # 尝试多种位域定义格式
+        lsb = None
+        msb = None
+        
+        # 格式1: 使用 lsb 和 msb 标签
+        field_lsb = field.find('lsb')
+        field_msb = field.find('msb')
+        if field_lsb is not None and field_msb is not None:
+            lsb = int(field_lsb.text)
+            msb = int(field_msb.text)
+        
+        # 格式2: 使用 bitRange 标签 [msb:lsb]
+        elif field.find('bitRange') is not None:
+            bit_range = field.find('bitRange').text
+            bit_range = bit_range.strip('[]')
+            if ':' in bit_range:
+                msb_str, lsb_str = bit_range.split(':')
+                msb = int(msb_str.strip())
+                lsb = int(lsb_str.strip())
+            else:
+                lsb = msb = int(bit_range.strip())
+        
+        # 格式3: 使用 bitOffset 和 bitWidth 标签
+        elif field.find('bitOffset') is not None:
+            bit_offset_elem = field.find('bitOffset')
+            bit_width_elem = field.find('bitWidth')
+            
+            if bit_offset_elem is not None and bit_offset_elem.text:
+                bit_offset = int(bit_offset_elem.text)
+                lsb = bit_offset
+                
+                if bit_width_elem is not None and bit_width_elem.text:
+                    bit_width = int(bit_width_elem.text)
+                    msb = bit_offset + bit_width - 1
+                else:
+                    msb = lsb
+        
+        if lsb is not None and msb is not None:
+            return {
+                'name': field_name.text,
+                'description': field_desc.text if field_desc is not None else '',
+                'lsb': lsb,
+                'msb': msb,
+                'access': field_access.text if field_access is not None else 'read-write'
+            }
+        
+        return None
+
     
     def populate_tree(self):
         """填充树形控件"""
